@@ -23,9 +23,9 @@ const StockList: React.FC = () => {
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
-      {stocks.map((stock) => (
+      {/* {stocks.map((stock) => (
         <AnimatedStockCard key={stock.symbol} stock={stock} />
-      ))}
+      ))} */}
     </div>
   );
 };

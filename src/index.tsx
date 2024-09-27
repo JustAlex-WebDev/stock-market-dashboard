@@ -10,6 +10,7 @@ import { store } from "./redux/store";
 const container = document.getElementById("root");
 
 if (!container) {
+  // Throw an error if the root element is not found in the document
   throw new Error("Root element not found.");
 }
 

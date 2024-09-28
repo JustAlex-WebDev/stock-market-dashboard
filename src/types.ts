@@ -1,34 +1,39 @@
-export interface Stock {
+// Define the type for Coin data from CoinGecko
+export interface Coin {
+  id: string;
   symbol: string;
   name: string;
-  price: number;
-  change: number;
+  image: string;
+  current_price: number;
+  market_cap: number;
+  market_cap_rank: number;
+  fully_diluted_valuation: number | null;
+  total_volume: number;
+  high_24h: number;
+  low_24h: number;
+  price_change_24h: number;
+  price_change_percentage_24h: number;
+  market_cap_change_24h: number;
+  market_cap_change_percentage_24h: number;
+  circulating_supply: number;
+  total_supply: number | null;
+  max_supply: number | null;
+  ath: number;
+  ath_change_percentage: number;
+  ath_date: string;
+  atl: number;
+  atl_change_percentage: number;
+  atl_date: string;
+  roi: {
+    times: number;
+    currency: string;
+    percentage: number;
+  } | null;
+  last_updated: string;
 }
 
-// Define the type for search results
-export interface SearchResult {
-  symbol: string;
-  description: string;
-}
-
-// Define the type for stock details
-export interface StockDetails {
-  symbol: string;
-  name: string;
-  country: string;
-  currency: string;
-  exchange: string;
-  ipo: string;
-  marketCapitalization: number;
-  finnhubIndustry: string;
-  // Add more fields if needed based on your API response
-}
-
-// Define the type for stock quotes
-export interface Quote {
-  currentPrice: number;
-  high: number;
-  low: number;
-  previousClose: number;
-  // Add more fields if needed based on your API response
+export interface HistoricalData {
+  prices: Array<[number, number]>; // UNIX timestamp and price
+  market_caps: Array<[number, number]>;
+  total_volumes: Array<[number, number]>;
 }

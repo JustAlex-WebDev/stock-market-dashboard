@@ -1,82 +1,105 @@
-import React, { useState } from "react";
-import { mockSearchResults } from "../constants/mock";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { IoSearch, IoClose } from "react-icons/io5";
+import { useDispatch, useSelector } from "react-redux";
 import SearchResults from "./SearchResults";
+import { Coin } from "../types";
+import { fetchStocks, selectCoin } from "../redux/stocksSlice";
+import { RootState, AppDispatch } from "../redux/store";
+import { debounce } from "lodash";
 
-// Define type for search result item
-interface SearchResult {
-  description: string;
-  displaySymbol: string;
-  symbol: string;
-  type: string;
-}
+const DEBOUNCE_DELAY = 300;
 
-/**
- * Search component for handling user input and displaying search results
- * Allows users to search for stock symbols and view matching results
- * @returns {JSX.Element} The search input and results display
- */
 const Search: React.FC = () => {
-  // State to manage the search input value
   const [input, setInput] = useState<string>("");
+  const [resultsVisible, setResultsVisible] = useState<boolean>(false);
 
-  // State to hold the search results
-  const [bestMatches, setBestMatches] = useState<SearchResult[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+  const {
+    stocks: bestMatches,
+    status,
+    error,
+  } = useSelector((state: RootState) => state.stocks);
+  const searchRef = useRef<HTMLDivElement | null>(null);
 
-  /**
-   * Clears the search input and results
-   * Resets the input field and empty the search results
-   */
+  const debouncedFetchStocks = useRef(
+    debounce((searchTerm: string) => {
+      if (searchTerm.trim().length > 0) {
+        dispatch(fetchStocks(searchTerm));
+      }
+    }, DEBOUNCE_DELAY),
+  ).current;
+
   const clear = () => {
     setInput("");
-    setBestMatches([]);
+    setResultsVisible(false);
   };
 
-  /**
-   * Updates the search results based on the input value
-   * Simulates fetching search results from an API
-   * Sets mock search results if input is not empty
-   */
-  const updateBestMatches = () => {
-    if (input.trim()) {
-      setBestMatches(mockSearchResults.result); // Simulate API response
+  const updateBestMatches = (searchTerm: string) => {
+    setResultsVisible(searchTerm.trim().length > 0);
+    debouncedFetchStocks(searchTerm);
+  };
+
+  const handleSelect = useCallback(
+    (coin: Coin) => {
+      dispatch(selectCoin(coin));
+      clear();
+    },
+    [dispatch],
+  );
+
+  const handleClickOutside = (event: MouseEvent) => {
+    if (
+      searchRef.current &&
+      !searchRef.current.contains(event.target as Node)
+    ) {
+      clear();
     }
   };
 
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
-    <div className="relative z-50 my-4 flex w-96 items-center rounded-md border-2 border-neutral-200 bg-white">
-      {/* Input field for user to type search query */}
+    <div
+      className="relative z-50 my-4 flex w-96 items-center rounded-md border-2 border-neutral-200 bg-white"
+      ref={searchRef}
+    >
       <input
         type="text"
         value={input}
+        aria-label="Search stocks"
         className="w-full rounded-md px-4 py-2 focus:outline-none"
         placeholder="Search stock..."
-        onChange={(e) => setInput(e.target.value)} // Update input value on change
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            updateBestMatches(); // Trigger search on Enter key press
-          }
+        onChange={(e) => {
+          setInput(e.target.value);
+          updateBestMatches(e.target.value);
         }}
       />
-
-      {/* Button to clear the search input */}
       {input && (
-        <button onClick={clear} className="m-1">
+        <button onClick={clear} aria-label="Clear search" className="m-1">
           <IoClose className="h-4 w-4 fill-gray-500" />
         </button>
       )}
-
-      {/* Button to trigger search manually */}
       <button
-        onClick={updateBestMatches}
+        onClick={() => updateBestMatches(input)}
+        aria-label="Search"
         className="m-1 flex h-8 w-8 items-center justify-center rounded-md bg-indigo-600 p-2"
       >
         <IoSearch className="h-4 w-4 fill-gray-100" />
       </button>
-
-      {/* Component to display search results if input is present and results are available */}
-      {input && bestMatches.length > 0 && (
-        <SearchResults results={bestMatches} />
+      {error && (
+        <div className="p-2 text-red-500" role="alert" aria-live="assertive">
+          <p>Error fetching results. Please try again.</p>
+        </div>
+      )}
+      {resultsVisible && (
+        <SearchResults
+          results={bestMatches}
+          loading={status === "loading"}
+          onSelect={handleSelect}
+        />
       )}
     </div>
   );

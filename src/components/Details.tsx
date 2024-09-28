@@ -1,85 +1,80 @@
 import React from "react";
 import Card from "./Card";
+import { Coin } from "../types";
 
 /**
- * Represents the details of a company.
- * @property {string} name - The name of the company.
- * @property {string} country - The country where the company is based.
- * @property {string} currency - The currency used by the company.
- * @property {string} exchange - The stock exchange where the company is listed.
- * @property {string} ipo - The IPO date of the company.
- * @property {number} marketCapitalization - The market capitalization of the company in millions.
- * @property {string} finnhubIndustry - The industry category of the company.
+ * Details component that displays coin details.
+ * @param {Coin} selectedCoin - The selected coin to display details for
+ * @returns {JSX.Element} The details section showing information about the selected coin.
  */
-interface CompanyDetails {
-  name: string;
-  country: string;
-  currency: string;
-  exchange: string;
-  ipo: string;
-  marketCapitalization: number;
-  finnhubIndustry: string;
-}
+const Details: React.FC<{ selectedCoin: Coin | null }> = ({ selectedCoin }) => {
+  if (!selectedCoin) {
+    return (
+      <div>
+        No coin details available. Please select a coin to view its details.
+      </div>
+    );
+  }
 
-/**
- * Props for the Details component.
- * @property {CompanyDetails} details - The company details to be displayed.
- */
-interface DetailsProps {
-  details: CompanyDetails;
-}
-
-/**
- * Converts a number in millions to billions and formats it as a currency string.
- * @param {number} number - The number to convert and format.
- * @returns {string} The formatted string with the number in billions.
- */
-const convertMillionToBillion = (number: number): string => {
-  return (
+  /**
+   * Converts a number in millions to billions and formats it as a currency string.
+   * @param {number} number - The number to convert and format.
+   * @returns {string} The formatted string with the number in billions.
+   */
+  const convertMillionToBillion = (number: number): string =>
     new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(number / 1000) + "B"
-  );
-};
+    }).format(number / 1000) + "B";
 
-/**
- * Details component that shows information about a company, such as its name, country, currency, exchange, IPO date, market capitalization, and industry.
- * @param {DetailsProps} props - The props for the component.
- * @param {CompanyDetails} props.details - The company details to display.
- * @returns {JSX.Element} The card element containing the company details.
- */
-const Details: React.FC<DetailsProps> = ({ details }) => {
-  // Map of detail keys to their corresponding labels
-  const detailsList: Record<keyof CompanyDetails, string> = {
+  const detailsList: Record<keyof Coin, string> = {
+    id: "ID",
+    symbol: "Symbol",
     name: "Name",
-    country: "Country",
-    currency: "Currency",
-    exchange: "Exchange",
-    ipo: "IPO Date",
-    marketCapitalization: "Market Capitalization",
-    finnhubIndustry: "Industry",
+    image: "Image",
+    current_price: "Current Price",
+    market_cap: "Market Cap",
+    market_cap_rank: "Market Cap Rank",
+    fully_diluted_valuation: "Fully Diluted Valuation",
+    total_volume: "Total Volume",
+    high_24h: "High 24h",
+    low_24h: "Low 24h",
+    price_change_24h: "Price Change 24h",
+    price_change_percentage_24h: "Price Change Percentage 24h",
+    market_cap_change_24h: "Market Cap Change 24h",
+    market_cap_change_percentage_24h: "Market Cap Change Percentage 24h",
+    circulating_supply: "Circulating Supply",
+    total_supply: "Total Supply",
+    max_supply: "Max Supply",
+    ath: "All-Time High",
+    ath_change_percentage: "All-Time High Change Percentage",
+    ath_date: "All-Time High Date",
+    atl: "All-Time Low",
+    atl_change_percentage: "All-Time Low Change Percentage",
+    atl_date: "All-Time Low Date",
+    roi: "ROI",
+    last_updated: "Last Updated",
   };
 
   return (
     <Card>
-      {/* List of company details */}
       <ul className="flex h-full w-full flex-col justify-between divide-y-2">
-        {Object.keys(detailsList).map((item) => {
-          // Cast item to keyof CompanyDetails to ensure type safety
-          const key = item as keyof CompanyDetails;
+        {Object.entries(detailsList).map(([key, label]) => {
+          const value = selectedCoin[key as keyof Coin];
+
+          const formattedValue =
+            key === "market_cap" || key === "fully_diluted_valuation"
+              ? convertMillionToBillion(value as number)
+              : value && typeof value === "object"
+                ? JSON.stringify(value)
+                : value;
+
           return (
-            <li key={item} className="flex flex-1 items-center justify-between">
-              {/* Label for the detail */}
-              <span>{detailsList[key]}</span>
-              {/* Value for the detail, converted if it's market capitalization */}
-              <span>
-                {key === "marketCapitalization"
-                  ? convertMillionToBillion(details[key] as number)
-                  : details[key]}
-              </span>
+            <li key={key} className="flex flex-1 items-center justify-between">
+              <span>{label}</span>
+              <span>{formattedValue}</span>
             </li>
           );
         })}

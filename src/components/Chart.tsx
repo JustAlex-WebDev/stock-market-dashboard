@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { mockHistoricalData } from "../constants/mock";
+import React, { useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../redux/store";
 import { convertUnixTimestampToDate } from "../helpers/date-helper";
 import Card from "./Card";
 import {
@@ -10,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { fetchHistoricalData } from "../redux/stocksSlice";
 
 /**
  * Chart component to display historical stock data
@@ -17,31 +19,64 @@ import {
  * @returns {JSX.Element} The chart displaying stock prices over time
  */
 const Chart: React.FC = () => {
-  // State to hold historical stock data
-  const [data, setData] = useState(mockHistoricalData);
+  const dispatch: AppDispatch = useDispatch();
 
-  // State to hold filter options (e.g., "1W", "1M", etc.)
-  const [filter, setFilter] = useState("1W");
+  // Get historical data and selected coin from Redux store
+  const { selectedCoin, historicalData, historicalDataStatus } = useSelector(
+    (state: RootState) => state.stocks,
+  );
 
-  /**
-   * Formats historical data for chart rendering
-   * Converts the close price (c) and timestamp (t) to the required chart format
-   * @returns {Array<{value: string, date: string}>} An array of objects containing value and formatted date
-   */
-  const formatData = (): Array<{ value: string; date: string }> => {
-    return data.c.map((item, index) => {
-      return {
-        value: item.toFixed(2), // Close price as a string with 2 decimal points
-        date: convertUnixTimestampToDate(data.t[index]), // Convert UNIX timestamp to date string
-      };
-    });
-  };
+  // Define time range
+  const from = Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 7;
+  const to = Math.floor(Date.now() / 1000);
+
+  // Fetch historical data when the selected coin changes
+  useEffect(() => {
+    const fetchData = async () => {
+      if (selectedCoin) {
+        try {
+          await dispatch(
+            fetchHistoricalData({
+              id: selectedCoin.id,
+              vsCurrency: "usd",
+              from,
+              to,
+            }),
+          ).unwrap(); // Unwrap to handle possible errors
+        } catch (error) {
+          console.error("Failed to fetch historical data", error);
+        }
+      }
+    };
+
+    fetchData();
+  }, [selectedCoin, dispatch]);
+
+  // Format data for Recharts
+  const formatData = useMemo((): Array<{ value: string; date: string }> => {
+    if (!historicalData || !historicalData.prices) return [];
+    return historicalData.prices.map(([timestamp, price]) => ({
+      value: price.toFixed(2), // Ensure price exists before calling toFixed
+      date: convertUnixTimestampToDate(timestamp),
+    }));
+  }, [historicalData]);
+
+  // Loading state
+  if (historicalDataStatus === "loading") {
+    return <span>Loading...</span>; // Show spinner instead of text
+  }
+
+  // Error handling
+  if (!historicalData || historicalDataStatus === "failed") {
+    return <span>Error loading historical data</span>;
+  }
 
   return (
     <Card>
       <ResponsiveContainer>
-        <AreaChart data={formatData()}>
-          {/* Linear gradient definition for area chart fill */}
+        <AreaChart data={formatData}>
+          {" "}
+          {/* Use formatData directly */}
           <defs>
             <linearGradient id="chartColor" x1="0" y1="0" x2="0" y2="1">
               <stop
@@ -52,24 +87,16 @@ const Chart: React.FC = () => {
               <stop offset="95%" stopColor="rgb(199 210 254)" stopOpacity={0} />
             </linearGradient>
           </defs>
-
-          {/* Area chart element */}
           <Area
             type="monotone"
             dataKey="value"
             stroke="#312e81"
             fillOpacity={1}
             strokeWidth={0.5}
-            fill="url(#chartColor)" // Reference to the gradient defined above
+            fill="url(#chartColor)"
           />
-
-          {/* Tooltip for displaying data on hover */}
           <Tooltip />
-
-          {/* X-axis with date as the key */}
           <XAxis dataKey="date" />
-
-          {/* Y-axis with dynamic domain based on data */}
           <YAxis domain={["dataMin", "dataMax"]} />
         </AreaChart>
       </ResponsiveContainer>

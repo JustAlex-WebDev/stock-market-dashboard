@@ -1,50 +1,113 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { fetchStockDataFromAPI } from "../api/stockAPI";
-import { Stock } from "../types";
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { Coin, HistoricalData } from "../types";
+import { searchCoins, fetchCoinHistoricalDataByRange } from "../api/stockAPI";
 
-// Define the initial state for the stocks slice
 interface StocksState {
-  data: Stock[];
-  loading: boolean;
+  stocks: Coin[];
+  status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
+  selectedCoin: Coin | null;
+  historicalData: HistoricalData | null; // For storing historical data
+  historicalDataStatus: "idle" | "loading" | "succeeded" | "failed";
 }
 
 const initialState: StocksState = {
-  data: [],
-  loading: false,
+  stocks: [],
+  status: "idle",
   error: null,
+  selectedCoin: null,
+  historicalData: null,
+  historicalDataStatus: "idle",
 };
 
-// Asynchronous thunk to fetch stock data
-export const fetchStockData = createAsyncThunk(
-  "stocks/fetchStockData",
-  async () => {
-    const data = await fetchStockDataFromAPI(); // Fetch from API
-    return data; // Return the stock data
+// Thunk to search for coins by term
+export const fetchStocks = createAsyncThunk(
+  "stocks/fetchStocks",
+  async (searchTerm: string, { rejectWithValue }) => {
+    try {
+      const response = await searchCoins(searchTerm);
+      return response;
+    } catch (error) {
+      return rejectWithValue("Failed to fetch stocks");
+    }
   },
 );
 
-// Create the stocks slice with reducers and extra reducers for async actions
+// Thunk to fetch historical data of a selected coin
+export const fetchHistoricalData = createAsyncThunk(
+  "stocks/fetchHistoricalData",
+  async (
+    {
+      id,
+      vsCurrency,
+      from,
+      to,
+    }: { id: string; vsCurrency: string; from: number; to: number },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await fetchCoinHistoricalDataByRange(
+        id,
+        from,
+        to,
+        vsCurrency,
+      );
+      return response;
+    } catch (error) {
+      return rejectWithValue("Failed to fetch historical data");
+    }
+  },
+);
+
 const stocksSlice = createSlice({
   name: "stocks",
   initialState,
-  reducers: {},
+  reducers: {
+    selectCoin(state, action: PayloadAction<Coin>) {
+      state.selectedCoin = action.payload;
+    },
+  },
   extraReducers: (builder) => {
+    // Fetch coins by term
     builder
-      .addCase(fetchStockData.pending, (state) => {
-        state.loading = true; // Set loading state when the fetch is pending
-        state.error = null;
+      .addCase(fetchStocks.pending, (state) => {
+        state.status = "loading";
       })
-      .addCase(fetchStockData.fulfilled, (state, action) => {
-        state.loading = false; // Set loading state to false when data is received
-        state.data = action.payload; // Set the data from the API
+      .addCase(
+        fetchStocks.fulfilled,
+        (state, action: PayloadAction<Coin[]>) => {
+          state.status = "succeeded";
+          state.stocks = action.payload;
+          const bitcoin = action.payload.find((coin) => coin.id === "bitcoin");
+          if (bitcoin) {
+            state.selectedCoin = bitcoin;
+          }
+        },
+      )
+      .addCase(fetchStocks.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      });
+
+    // Fetch historical data
+    builder
+      .addCase(fetchHistoricalData.pending, (state) => {
+        state.historicalDataStatus = "loading";
       })
-      .addCase(fetchStockData.rejected, (state, action) => {
-        state.loading = false; // Stop loading if the fetch fails
-        state.error = action.error.message || "Failed to fetch stock data"; // Store the error message
+      .addCase(
+        fetchHistoricalData.fulfilled,
+        (state, action: PayloadAction<HistoricalData>) => {
+          state.historicalDataStatus = "succeeded";
+          state.historicalData = action.payload;
+        },
+      )
+      .addCase(fetchHistoricalData.rejected, (state, action) => {
+        state.historicalDataStatus = "failed";
+        state.error = action.payload as string;
       });
   },
 });
 
-// Export the reducer to be included in the store
+export const { selectCoin } = stocksSlice.actions;
+
 export default stocksSlice.reducer;

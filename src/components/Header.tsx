@@ -1,5 +1,4 @@
 import React from "react";
-import { Coin } from "../types";
 import Search from "./Search";
 
 /**
@@ -7,12 +6,19 @@ import Search from "./Search";
  * @param {Coin} selectedCoin - The selected coin to display in the header
  * @returns {JSX.Element} The header element containing the company name and search functionality.
  */
-const Header: React.FC<{ selectedCoin: Coin | null }> = ({ selectedCoin }) => {
+const Header: React.FC = () => {
   return (
-    <header className="xl:px-32" role="banner">
-      <h1 className="text-5xl font-bold" aria-live="polite">
-        {selectedCoin?.name || "Select a cryptocurrency"}
-      </h1>
+    <header
+      className="flex w-full items-center justify-between bg-white p-8"
+      role="banner"
+    >
+      {/* <span
+        className="text-lg font-bold text-[#1b1b1b] xl:text-xl"
+        aria-live="polite"
+      >
+        My Portfolio
+      </span> */}
+
       <Search />
     </header>
   );

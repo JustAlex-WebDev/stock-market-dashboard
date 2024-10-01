@@ -49,6 +49,36 @@ export const fetchCoinsList = async (): Promise<Coin[]> => {
 };
 
 /**
+ * Fetches the top 10 coins by market cap from CoinGecko.
+ * @returns {Promise<Coin[]>} A promise that resolves to an array of the top 10 coins.
+ * @throws {Error} Throws an error if the request fails.
+ */
+export const fetchTopTenCoins = async (): Promise<Coin[]> => {
+  const url = `${COINGECKO_API_BASE}/coins/markets`;
+  const params = {
+    vs_currency: "usd",
+    order: "market_cap_desc", // Sort by market cap
+    per_page: 10, // Limit to top 100 coins
+    page: 1, // First page
+  };
+
+  try {
+    const response = await axios.get<Coin[]>(url, {
+      headers: { accept: "application/json" },
+      params,
+    });
+
+    if (response.status !== 200) {
+      throw new Error(`Failed to fetch top coins: ${response.statusText}`);
+    }
+
+    return response.data; // Returns an array of top 100 coins
+  } catch (error) {
+    throw new Error("Error fetching top coins");
+  }
+};
+
+/**
  * Searches for coins based on a user's query.
  * @param {string} query - The user's search input.
  * @returns {Promise<Coin[]>} A promise that resolves to an array of up to 10 matching coins.

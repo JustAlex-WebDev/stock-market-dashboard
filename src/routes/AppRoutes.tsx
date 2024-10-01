@@ -1,6 +1,6 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
-import HomePage from "../pages/HomePage";
+import Dashboard from "../pages/Dashboard";
 
 /**
  * Component responsible for defining the application's routes.
@@ -10,8 +10,8 @@ import HomePage from "../pages/HomePage";
 const AppRoutes: React.FC = () => (
   <Routes>
     {/* Route for the home page */}
-    {/* This will render the HomePage component when the URL path is '/' */}
-    <Route path="/" element={<HomePage />} />
+    {/* This will render the Dashboard component when the URL path is '/' */}
+    <Route path="/" element={<Dashboard />} />
   </Routes>
 );
 

@@ -2,11 +2,17 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { Coin, HistoricalData } from "../types";
 import { searchCoins, fetchCoinHistoricalDataByRange } from "../api/stockAPI";
 
+// Error object interface
+interface ErrorState {
+  message: string;
+  type?: number; // Optional error type (e.g., HTTP status code)
+}
+
 // Interface for the stocks slice state
 interface StocksState {
   stocks: Coin[]; // Array of stocks (coins)
   status: "idle" | "loading" | "succeeded" | "failed"; // Status of stocks fetching
-  error: string | null; // Error message if fetching fails
+  error: ErrorState | null; // Error object if fetching fails
   selectedCoin: Coin | null; // The currently selected coin
   historicalData: HistoricalData | null; // For storing historical data of a selected coin
   historicalDataStatus: "idle" | "loading" | "succeeded" | "failed"; // Status of historical data fetching
@@ -29,8 +35,11 @@ export const fetchStocks = createAsyncThunk(
     try {
       const response = await searchCoins(searchTerm); // Fetch coins based on the search term
       return response; // Return the fetched coins
-    } catch (error) {
-      return rejectWithValue("Failed to fetch stocks"); // Handle fetch error
+    } catch (error: any) {
+      return rejectWithValue({
+        message: "Failed to fetch stocks",
+        type: error.response?.status || 500, // Pass the status code if available
+      });
     }
   },
 );
@@ -55,8 +64,11 @@ export const fetchHistoricalData = createAsyncThunk(
         vsCurrency,
       );
       return response; // Return historical data
-    } catch (error) {
-      return rejectWithValue("Failed to fetch historical data"); // Handle fetch error
+    } catch (error: any) {
+      return rejectWithValue({
+        message: "Failed to fetch historical data",
+        type: error.response?.status || 500,
+      });
     }
   },
 );
@@ -81,15 +93,17 @@ const stocksSlice = createSlice({
         (state, action: PayloadAction<Coin[]>) => {
           state.status = "succeeded"; // Set status to succeeded
           state.stocks = action.payload; // Update stocks with fetched data
-          const bitcoin = action.payload.find((coin) => coin.id === "bitcoin");
+          const bitcoin = action.payload.find(
+            (coin) => coin.id === "Ethereum Classic",
+          );
           if (bitcoin) {
             state.selectedCoin = bitcoin; // Set bitcoin as the selected coin if found
           }
         },
       )
-      .addCase(fetchStocks.rejected, (state, action) => {
+      .addCase(fetchStocks.rejected, (state, action: PayloadAction<any>) => {
         state.status = "failed"; // Set status to failed
-        state.error = action.payload as string; // Store error message
+        state.error = action.payload; // Store error object
       });
 
     // Handle fetch historical data actions
@@ -104,10 +118,13 @@ const stocksSlice = createSlice({
           state.historicalData = action.payload; // Store historical data
         },
       )
-      .addCase(fetchHistoricalData.rejected, (state, action) => {
-        state.historicalDataStatus = "failed"; // Set status to failed
-        state.error = action.payload as string; // Store error message
-      });
+      .addCase(
+        fetchHistoricalData.rejected,
+        (state, action: PayloadAction<any>) => {
+          state.historicalDataStatus = "failed"; // Set status to failed
+          state.error = action.payload; // Store error object
+        },
+      );
   },
 });
 

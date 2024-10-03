@@ -12,8 +12,5 @@ export {
   RiEyeOffLine, // Eye off icon (visibility off)
   RiSearchLine, // Search icon
   RiCloseLine, // Close icon
+  RiAccountCircleLine, // Account icon
 } from "react-icons/ri";
-
-export {
-  TbArrowsExchange, // Sort icon
-} from "react-icons/tb";

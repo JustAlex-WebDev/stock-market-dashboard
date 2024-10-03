@@ -16,7 +16,7 @@ interface CardProps {
  */
 const Card: React.FC<CardProps> = ({ children }) => {
   return (
-    <div className="relative flex h-auto w-full flex-col gap-4 rounded-lg bg-white p-4">
+    <div className="relative flex h-auto w-full flex-col gap-4 overflow-hidden rounded-xl bg-white p-4">
       {children}
     </div>
   );

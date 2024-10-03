@@ -18,8 +18,13 @@ import {
  */
 const Sidebar: React.FC = () => {
   // State to track the visibility of the total investment amount
-  const [isInvestmentHidden, setIsInvestmentHidden] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Loading state for skeleton animation
+  const [isInvestmentHidden, setIsInvestmentHidden] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Loading state for skeleton animation
+
+  // State for total investment
+  const [totalInvestment, setTotalInvestment] = useState<number>(5380.9);
+  // State for percentage change
+  const [percentageChange, setPercentageChange] = useState<number>(0);
 
   // Simulate loading for 2 seconds
   useEffect(() => {
@@ -45,6 +50,24 @@ const Sidebar: React.FC = () => {
       JSON.stringify(isInvestmentHidden),
     );
   }, [isInvestmentHidden]);
+
+  // Random small changes to the total investment every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTotalInvestment((prev: number) => {
+        const change = (Math.random() * 2 - 1).toFixed(2); // Random small change between -1 and +1
+        return +(prev + parseFloat(change)).toFixed(2); // Update with new random value and fix to 2 decimals
+      });
+
+      // Random percentage change between -1% and +1%
+      setPercentageChange((prev) => {
+        const change = (Math.random() * 2 - 1).toFixed(2); // Random small change between -1 and +1
+        return +(prev + parseFloat(change)).toFixed(2); // Update with new random percentage value
+      });
+    }, 3000);
+
+    return () => clearInterval(interval); // Clean up the interval on component unmount
+  }, []);
 
   /**
    * Toggles the visibility of the total investment by adding/removing a blur effect.
@@ -77,7 +100,7 @@ const Sidebar: React.FC = () => {
   ];
 
   return (
-    <div className="sticky top-0 flex h-screen w-0 flex-col items-center justify-between gap-8 border-r-2 border-gray-200 bg-white p-8 sm:w-[25%] sm:min-w-80">
+    <div className="sticky top-0 z-50 hidden h-screen w-[25%] flex-col items-center justify-between gap-8 border-r-2 border-gray-100 bg-white p-8 md:flex">
       {/* Container for the logo and total investment sections */}
       <div className="flex w-full flex-col items-center justify-center gap-8">
         {/* Logo Section */}
@@ -90,8 +113,12 @@ const Sidebar: React.FC = () => {
             alt="Stock Market Dashboard company logo"
             className="h-auto w-1/2 cursor-pointer"
           />
-          <span className="cursor-pointer text-base">Stock Market</span>
-          <span className="-mt-1 cursor-pointer text-xl">Dashboard</span>
+          <span className="cursor-pointer text-sm lg:text-base">
+            Stock Market
+          </span>
+          <span className="-mt-1 cursor-pointer text-lg lg:text-xl">
+            Dashboard
+          </span>
         </div>
 
         {/* Total Investment Section with Skeleton */}
@@ -102,7 +129,7 @@ const Sidebar: React.FC = () => {
           transition={{ duration: 1.5 }}
         >
           {/* Left side of the investment summary */}
-          <div className="flex w-2/3 flex-col items-start gap-1 rounded-l-lg p-4">
+          <div className="flex w-full flex-col items-start gap-1 rounded-l-lg p-4 lg:w-2/3">
             <span className="text-xs opacity-90">Total Investment</span>
 
             <div className="flex items-center justify-center gap-2 text-xl font-semibold">
@@ -113,13 +140,11 @@ const Sidebar: React.FC = () => {
                   variants={shimmerVariants}
                 />
               ) : (
-                <span
-                  className={`select-none transition-all ${
-                    isInvestmentHidden ? "blur-sm" : ""
-                  }`}
+                <m.span
+                  className={`${isInvestmentHidden ? "blur-sm" : ""} select-none text-lg transition-all lg:text-xl`}
                 >
-                  $5380.90
-                </span>
+                  ${totalInvestment}
+                </m.span>
               )}
 
               {/* Toggle between eye and eye-off icons */}
@@ -149,19 +174,21 @@ const Sidebar: React.FC = () => {
 
           {/* Right side showing the percentage change */}
           <div
-            className={`flex w-1/3 items-center justify-center rounded-r-lg border-l-2 border-zinc-900 bg-zinc-950 p-4`}
+            className={`flex w-1/3 items-center justify-center rounded-r-lg border-l-2 border-zinc-900 bg-zinc-950 p-4 sm:hidden lg:flex`}
           >
             {/* Show shimmer effect while loading */}
             {isLoading ? (
               <m.div
-                className="h-5 w-24 animate-pulse rounded bg-gray-200"
+                className="h-5 w-24 animate-pulse rounded-xl bg-gray-200"
                 variants={shimmerVariants}
               />
             ) : (
               <m.span
-                className={`${isInvestmentHidden ? "blur-sm" : ""} select-none text-xs text-green-400 transition-all`}
+                className={`${isInvestmentHidden ? "blur-sm" : ""} select-none text-xs text-green-500 transition-all`}
               >
-                +19.90%
+                {percentageChange >= 0
+                  ? `+${percentageChange.toFixed(2)}%`
+                  : `${percentageChange.toFixed(2)}%`}
               </m.span>
             )}
           </div>
@@ -209,7 +236,7 @@ const Sidebar: React.FC = () => {
                 <div className="h-10 w-full animate-pulse rounded-xl bg-gray-200" />
               ) : (
                 <div
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-xl bg-white p-2 py-4 text-sm font-semibold transition-all hover:bg-[#f5f7f9]"
+                  className={`flex w-full cursor-pointer items-center gap-2 rounded-xl p-2 py-4 text-sm font-semibold transition-all hover:bg-[#f5f7f9]`}
                   tabIndex={0}
                   role="link"
                 >

@@ -8,13 +8,16 @@ interface SearchResultsProps {
   onSelect: (coin: Coin) => void;
   activeIndex: number;
   setActiveIndex: (index: number) => void;
+  error: string | null; // Receive the error message as a prop
 }
 
 /**
- * SearchResults component displays a list of search results for cryptocurrencies.
- * It also indicates the price change status with background color on hover.
- * @param {SearchResultsProps} props - The properties passed to the component.
- * @returns {JSX.Element} A list of search results or a loading spinner.
+ * SearchResults component displays a list of coin search results.
+ * It handles the display of loading states, error messages,
+ * and allows users to select a coin from the list.
+ *
+ * @param {SearchResultsProps} props The props for the component.
+ * @returns {JSX.Element} The rendered component.
  */
 const SearchResults: React.FC<SearchResultsProps> = ({
   results,
@@ -23,6 +26,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   onSelect,
   activeIndex,
   setActiveIndex,
+  error,
 }) => {
   return (
     <ul
@@ -39,18 +43,24 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
       {/* Error message */}
       {!loading && results.length === 0 && (
-        <li className="p-4 text-center">No results found</li>
+        <li className="flex h-full w-full items-center justify-center font-semibold">
+          {error}
+        </li>
       )}
 
       {/* Search Results */}
       {!loading &&
         results.map((coin, index) => {
-          // Determine if the price change is positive or negative
           const isPositiveChange = coin.price_change_24h > 0;
 
+          /**
+           * Handle keyboard navigation and selection.
+           * Allows users to navigate search results with arrow keys and select with Enter.
+           * @param {React.KeyboardEvent<HTMLLIElement>} event The keyboard event triggered by key presses.
+           */
           const handleKeyDown = (event: React.KeyboardEvent<HTMLLIElement>) => {
             if (event.key === "Enter") {
-              onSelect(coin); // Trigger onSelect when Enter is pressed
+              onSelect(coin);
             }
           };
 
@@ -58,12 +68,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             <li
               key={coin.id}
               role="option"
-              className={`m-2 flex cursor-pointer items-center justify-between rounded-md p-4 text-black transition-all ${index === activeIndex ? "bg-gray-300" : "bg-[#f5f7f9]"} ${isPositiveChange ? "hover:bg-lime-500" : "hover:bg-red-500"}`}
+              className={`m-2 flex cursor-pointer items-center justify-between rounded-md p-4 text-black transition-all hover:bg-[#dde0e2] ${
+                index === activeIndex ? "bg-[#dde0e2]" : "bg-[#f5f7f9]"
+              }`}
               onClick={() => onSelect(coin)}
-              onMouseEnter={() => setActiveIndex(index)} // Set active index on mouse enter
-              onKeyDown={handleKeyDown} // Add keydown event handler
+              onMouseEnter={() => setActiveIndex(index)}
+              onKeyDown={handleKeyDown}
               aria-label={`Select ${coin.name}`}
-              tabIndex={0} // Make the list item focusable
+              tabIndex={0}
             >
               <span>{coin.symbol.toUpperCase()}</span>
               <span>{coin.name}</span>
